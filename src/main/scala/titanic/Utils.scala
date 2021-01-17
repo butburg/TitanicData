@@ -115,33 +115,28 @@ object Utils {
 
   val classListTitanic = Map("survival" -> 0, "survival" -> 1)
 
-  def naiveBayesTrain(passengers: List[Map[String, Any]], classList: Map[String, Int], attributes: Map[String,Int]): Float = {
-
-    for (c <- classList) {
-      val classCount  = passengers.flatMap(pass => pass.filter(_._1 == c._1)).count(_._2 == c._2)
-      val priorProb = classCount.toFloat/passengers.size
-      for (a <- attributes) {
-        for (value <- a._1) {
-          value / classCount
-        }
-      }
-    }
-
-    //
-    //
-    //       .filter(attr => attr._1 == "survived").filter(_._2 == "1"))
-
-    //.groupBy(identity).mapValues(_.size)
-    ///for (d <- eachPossibleAttribute) yield
-    //  Calculate P(d|c) -conditional probability of d given
-    //}
-    //class is c
+  // without PriorProbability :/
+  def naiveBayesTrain(
+                       passengers: List[Map[String, Any]],
+                       className: String = "survived",
+                       classList: List[Int] = List(0, 1),
+                       attributeMap: Map[String, List[Any]] = Map("pclass" -> List(1, 2, 3), "sex" -> List("male", "female"))
+                     ): Map[Int, Map[String, List[Float]]] = {
+    classList
+      .map(c => c -> attributeMap
+        .flatMap(a => Map(a._1 -> a._2
+          .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
+        ))).toMap
   }
+  //output like:  Map(0 -> Map(pclass -> List(0.14571948, 0.17668489, 0.6775956), sex -> List(0.852459, 0.14754099)),
+  //                  1 -> Map(pclass -> List(0.39766082, 0.25438598, 0.34795323), sex -> List(0.31871346, 0.6812866)))
+
 
   // passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
   //    .groupBy(identity).mapValues(_.size)
 
-  def naiveBayesClassify(passengers: List[Map[String, Any]], classList: List[String]): Float =  ???
+  def naiveBayesClassify(passengers: List[Map[String, Any]], classList: List[String]): Float = ???
+
   /*{
     for (c <- classList) yield
       for (d <- eachGivenAttribute) yield
@@ -152,7 +147,7 @@ object Utils {
   }
 */
 
-  countPriorProbability
+
 
 
   //produces sometimes an missing argument list error - can be ignored

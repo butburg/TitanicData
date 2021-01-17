@@ -34,7 +34,7 @@ object VegasUtils {
     // throw an IllegalArgumentException if charts are empty
     require(charts.nonEmpty)
     // create a temp file and open it for writing
-    val tempFile = File.createTempFile("tmp-", "")
+    val tempFile = File.createTempFile("tmp-", ".html")
     val writer = new BufferedWriter(new FileWriter(tempFile))
 
     //write the header, which is the same for all files

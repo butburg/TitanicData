@@ -89,7 +89,6 @@ object Utils {
   }
 
 
-  //TODO here erstes
   /**
    * Returns all missing values by attribute
    *
@@ -102,29 +101,58 @@ object Utils {
   def countAllMissingValues(passengers: List[Map[String, Any]], attList: List[String]): Map[String, Int] =
     passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
       .groupBy(identity).mapValues(_.size)
-//  {
-//    passengers
-//      .foreach(passengerString => passengerString
-//        .flatMap(passAttr =>
-//          attList
-//            .withFilter(attribute => passAttr._1 == attribute &&
-//              passAttr._2 == null)
-//            .map(attribute => (attribute, 1))
-//        ))
-//  }
-
-  //attList
-  //  .map(attribute => (attribute, passengers
-  //    .foreach(passenger => for (attrPas <- passenger if attrPas._1 == attribute && attrPas._2 == null) yield 1)))
 
 
-  /*attList   .foreach(attr => (        attr,        passengers              .map(pass => pass                    .filter(_._2 == null)
-                  .map(_ => 1).sum)
-    ))
+  //TODO here erstes
+  //
+  /*
+  * classList = survival->0, survival->1
+  * PriorProbability = 342(sur), 549(nots)
+  * attributes = l = List(pclass->(1,2,3),fareclass->(1,2,3,4),ageclass->(1,2,3,4))
+  *
+  *
+  * */
+
+  val classListTitanic = Map("survival" -> 0, "survival" -> 1)
+
+  def naiveBayesTrain(passengers: List[Map[String, Any]], classList: Map[String, Int], attributes: Map[String,Int]): Float = {
+
+    for (c <- classList) {
+      val classCount  = passengers.flatMap(pass => pass.filter(_._1 == c._1)).count(_._2 == c._2)
+      val priorProb = classCount.toFloat/passengers.size
+      for (a <- attributes) {
+        for (value <- a._1) {
+          value / classCount
+        }
+      }
+    }
+
+    //
+    //
+    //       .filter(attr => attr._1 == "survived").filter(_._2 == "1"))
+
+    //.groupBy(identity).mapValues(_.size)
+    ///for (d <- eachPossibleAttribute) yield
+    //  Calculate P(d|c) -conditional probability of d given
+    //}
+    //class is c
+  }
+
+  // passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
+  //    .groupBy(identity).mapValues(_.size)
+
+  def naiveBayesClassify(passengers: List[Map[String, Any]], classList: List[String]): Float =  ???
+  /*{
+    for (c <- classList) yield
+      for (d <- eachGivenAttribute) yield
+        pc
+    ← pc
+    · P(d | c)
+    return c where p(c) is max
+  }
 */
-  //    passengers.foreach(passenger => passenger.foreach(attr =>attr._2==null))
 
-  //attList.map(attr => (attr, passengers.foreach(passenger => passenger.filter(attrPas => attrPas._1 == attr && attrPas._2 == null).map(_ => 1).sum)))
+  countPriorProbability
 
 
   //produces sometimes an missing argument list error - can be ignored

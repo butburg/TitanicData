@@ -58,7 +58,32 @@ val trainresult: Map[Int, Map[String, Map[Any, Double]]] = Map(
   1 -> Map("pclass" -> Map(1 -> 0.34795323, 2 -> 00.39766082, 3 -> 0.25438598),
     "sex" -> Map("male" -> 0.31871346, "female" -> 0.6812866)))
 
-
+val isSurvived = {
+  test
+    .map(passenger => {
+      val res = mutable.Map[Any, Float]()
+      trainresult
+        .foreach(c => {
+          var pc = passengers.count(m => m(className) == c._1).toFloat / passengers.size * 100
+          c._2
+            .foreach(attribut => {
+              println(attribut)
+              println(passenger.filter(tupel => tupel._1 == attribut._1))
+              val why = passenger.filter(tupel => tupel._1 == attribut._1).values.head
+              val p = attribut._2.filter(tupel => tupel._1 == why).values.head
+              println("pc:" + pc + "*" + p.toFloat + " * 100=" + pc * p.toFloat * 100)
+              pc = pc * p.toFloat * 100
+              res.update(c._1, pc)
+            })
+        })
+      println(res)
+      println("survive?" + res.maxBy(_._2))
+      val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
+      newPassenger.update("survived", res.maxBy(_._2)._1)
+      println(newPassenger)
+    })
+  test
+}
 
 
 val isSurvived = {
@@ -104,7 +129,7 @@ val isSurvived = {
 
     newData = newPassenger :: newData
   }
-  println("NewData:"+newData)
+  println("NewData:" + newData)
   newData
 }
 /*

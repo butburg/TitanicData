@@ -23,12 +23,39 @@ val className = "survived"
 
 val trainingResult =
   classList
-    .map(c => c->attributeMap
+    .map(c => c->attributeMap //<- should be full list: each possible!!!
       .flatMap(a => Map(a._1 -> a._2
         .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
       ))).toMap
 
+
+
+val isSurvived =
+  classList
+    .map(c => c->attributeMap //<- should be only the one you will count on, so pclass, ageclass, fareclass, embarked
+      .flatMap(a => Map(a._1 -> a._2
+        .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c)).map(_ * (passengers.count(m => m(className) == c).toFloat /passengers.size))
+      ))).toMap
+
 /*
+
+val isSurvived = for (c <- classList) {
+  val classCount = passengers.count(m => m(className) == c)
+  println("ClassCount: " + classCount)
+  val priorProb = classCount.toFloat / passengers.size
+  println("PriorProb" + priorProb)
+  val classList = passengers.filter(map => map(className) == c)
+  //should be only the one you will count on, so pclass, ageclass, fareclass, embarked
+  for (a <- attributeMap) {
+    for (value <- a._2) yield {
+      val valueCount = classList.count(m => m(a._1) == value).toFloat / classCount
+      println(a._1 + "(" + value + "): " + valueCount)
+      println(valueCount.toFloat / classCount)
+    }
+  }
+}
+
+
 val res = for (c <- classList) {
   val classCount = passengers.count(m => m(className) == c)
   println("ClassCount: " + classCount)
@@ -54,7 +81,8 @@ val res =
         .map(value => classList.count(m => m(a._1) == value).toFloat / classCount)
       ))
   }))
-  */
+
+*/
 
 
 

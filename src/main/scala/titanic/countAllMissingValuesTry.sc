@@ -58,11 +58,15 @@ val trainresult: Map[Int, Map[String, Map[Any, Double]]] = Map(
   1 -> Map("pclass" -> Map(1 -> 0.34795323, 2 -> 00.39766082, 3 -> 0.25438598),
     "sex" -> Map("male" -> 0.31871346, "female" -> 0.6812866)))
 
+
+
+
 val isSurvived = {
+  var newData = List[collection.Map[String, Any]]()
   //für jeden passagier
   for (passenger <- test) {
     println("START")
-    val res = mutable.Map[Any,Float]()
+    val res = mutable.Map[Any, Float]()
     for (c <- trainresult) {
       val priorProb = passengers.count(m => m(className) == c._1).toFloat / passengers.size
       println(priorProb)
@@ -87,13 +91,21 @@ val isSurvived = {
         println("pc:" + pc + "*" + p.toFloat + " * 100=" + pc * p.toFloat * 100)
         pc = pc * p.toFloat * 100
         //ordne den wert der c klasse zu
-        res.update(c._1,pc)
+        res.update(c._1, pc)
       }
       println("PC: " + pc)
     }
     //hole den größten wert und die entsprechende c klasse => ergebnis
+    println(res)
     println("survive?" + res.maxBy(_._2))
+    val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
+    newPassenger.update("survived", res.maxBy(_._2)._1)
+    println(newPassenger)
+
+    newData = newPassenger :: newData
   }
+  println("NewData:"+newData)
+  newData
 }
 /*
 

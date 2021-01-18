@@ -17,19 +17,27 @@ val attList = List("passengerID", "pclass", "survived", "name", "sex", "age", "s
 * */
 
 
-val attributeMap = Map("pclass" -> List(1, 2, 3), "sex" -> List("male", "female"))
-val classList = List(0, 1)
+//val attributeMap = Map("pclass" -> List(1, 2, 3), "sex" -> List("male", "female"))
+//val classList = List(0, 1)
+val wantedAttributes = List("pclass", "sex")
 val className = "survived"
 
+
+def getClassValues(l: List[Map[String, Any]], className: String): List[Any] =
+  l.flatMap(map => map.filter(att => att._1 == className)).distinct.map(_._2)
+
+def getAttrsAndValues(l: List[Map[String, Any]], wantedAttributes: List[String]): Map[String, List[Any]] =
+  wantedAttributes.map(attr => attr -> getClassValues(l, attr)).toMap
+
 val trainingResult =
-  classList
-    .map(c => c->attributeMap //<- should be full list: each possible!!!
+  getClassValues(passengers, "survived")
+    .map(c => c -> getAttrsAndValues(passengers, wantedAttributes) //<- should be full list: each possible!!!
       .flatMap(a => Map(a._1 -> a._2
         .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
       ))).toMap
 
 
-
+/*
 val isSurvived =
   classList
     .map(c => c->attributeMap //<- should be only the one you will count on, so pclass, ageclass, fareclass, embarked

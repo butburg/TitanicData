@@ -115,15 +115,24 @@ object Utils {
 
   val classListTitanic = Map("survival" -> 0, "survival" -> 1)
 
+  val wantedAttributes = List("ageclass","fare", "pclass", "sex", "embarked")
+
+
+  def getClassValues(l: List[Map[String, Any]], className: String): List[Any] =
+    l.flatMap(map => map.filter(att => att._1 == className)).distinct.map(_._2)
+
+  def getAttrsAndValues(l: List[Map[String, Any]], wantedAttributes: List[String]): Map[String, List[Any]] =
+    wantedAttributes.map(attr => attr -> getClassValues(l, attr)).toMap
+
+
   // without PriorProbability :/
   def naiveBayesTrain(
                        passengers: List[Map[String, Any]],
                        className: String = "survived",
-                       classList: List[Int] = List(0, 1),
-                       attributeMap: Map[String, List[Any]] = Map("pclass" -> List(1, 2, 3), "sex" -> List("male", "female"))
-                     ): Map[Int, Map[String, List[Float]]] = {
-    classList
-      .map(c => c -> attributeMap
+                       wantedAttributes: List[String] = List("ageclass","fare", "pclass", "sex", "embarked")
+                     ): Map[Any, Map[String, List[Float]]] = {
+    getClassValues(passengers, className)
+      .map(c => c -> getAttrsAndValues(passengers, wantedAttributes)
         .flatMap(a => Map(a._1 -> a._2
           .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
         ))).toMap

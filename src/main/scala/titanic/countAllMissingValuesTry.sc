@@ -58,34 +58,42 @@ val trainresult: Map[Int, Map[String, Map[Any, Double]]] = Map(
   1 -> Map("pclass" -> Map(1 -> 0.34795323, 2 -> 00.39766082, 3 -> 0.25438598),
     "sex" -> Map("male" -> 0.31871346, "female" -> 0.6812866)))
 
-val isSurvived = {
-  test
-    .map(passenger => {
-      val res = mutable.Map[Any, Float]()
-      trainresult
-        .foreach(c => {
-          var pc = passengers.count(m => m(className) == c._1).toFloat / passengers.size * 100
-          c._2
-            .foreach(attribut => {
-              println(attribut)
-              println(passenger.filter(tupel => tupel._1 == attribut._1))
-              val why = passenger.filter(tupel => tupel._1 == attribut._1).values.head
-              val p = attribut._2.filter(tupel => tupel._1 == why).values.head
-              println("pc:" + pc + "*" + p.toFloat + " * 100=" + pc * p.toFloat * 100)
-              pc = pc * p.toFloat * 100
-              res.update(c._1, pc)
-            })
-        })
-      println(res)
-      println("survive?" + res.maxBy(_._2))
-      val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
-      newPassenger.update("survived", res.maxBy(_._2)._1)
-      println(newPassenger)
-    })
-  test
-}
+val isSurvived = test
+  .map(passenger => {
+    val res = mutable.Map[Any, Float](1 -> 1f)
+    println("a" + trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1)))))
 
+    trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1))))
+      .foreach(c => c._2.flatMap(att => trainresult
+        .map(tupel => (tupel._1,
+          tupel._2.map(attribute => attribute._2.filter(value => value._1 == att._2)))
+        )
+      )
+      )
 
+    trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1))))
+      .foreach(c => println(c._2.map(att =>
+          trainresult.filter(_._1 == c._1)
+            .map(tupel => (tupel._1,
+              tupel._2.flatMap(
+                attribute => attribute._2
+                  .filter(value => value._1 == att._2)).map(_._2).head)
+            ).values
+        ).foldLeft(100d)((x, y) => x * y.head)
+      )
+      )
+
+    println(res)
+    println("survive?" + res.maxBy(_._2))
+    val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
+    newPassenger.update("survived", res.maxBy(_._2)._1)
+    println(newPassenger)
+    newPassenger
+  })
+
+List(0.34, 0.2112, 0.3953).foldLeft(4d)((x, y) => x * y)
+
+/*
 val isSurvived = {
   var newData = List[collection.Map[String, Any]]()
   //für jeden passagier

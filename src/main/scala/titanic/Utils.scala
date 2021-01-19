@@ -2,6 +2,7 @@ package titanic
 
 import java.io.PrintWriter
 
+import scala.collection.mutable
 import scala.util.Try
 
 
@@ -115,7 +116,7 @@ object Utils {
 
   val classListTitanic = Map("survival" -> 0, "survival" -> 1)
 
-  val wantedAttributes = List("ageclass","fare", "pclass", "sex", "embarked")
+  val wantedAttributes = List("ageclass", "fare", "pclass", "sex", "embarked")
 
 
   def getClassValues(l: List[Map[String, Any]], className: String): List[Any] =
@@ -129,7 +130,7 @@ object Utils {
   def naiveBayesTrain(
                        passengers: List[Map[String, Any]],
                        className: String = "survived",
-                       wantedAttributes: List[String] = List("ageclass","fare", "pclass", "sex", "embarked")
+                       wantedAttributes: List[String] = List("ageclass", "fare", "pclass", "sex", "embarked")
                      ): Map[Any, Map[String, List[Float]]] = {
     getClassValues(passengers, className)
       .map(c => c -> getAttrsAndValues(passengers, wantedAttributes)
@@ -137,6 +138,7 @@ object Utils {
           .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
         ))).toMap
   }
+
   //output like:  Map(0 -> Map(pclass -> List(0.14571948, 0.17668489, 0.6775956), sex -> List(0.852459, 0.14754099)),
   //                  1 -> Map(pclass -> List(0.39766082, 0.25438598, 0.34795323), sex -> List(0.31871346, 0.6812866)))
 
@@ -144,19 +146,25 @@ object Utils {
   // passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
   //    .groupBy(identity).mapValues(_.size)
 
-  def naiveBayesClassify(passengers: List[Map[String, Any]], classList: List[String]): Float = ???
-
-  /*{
-    for (c <- classList) yield
-      for (d <- eachGivenAttribute) yield
-        pc
-    ← pc
-    · P(d | c)
-    return c where p(c) is max
-  }
-*/
-
-
+  def naiveBayesClassify(testPassengers: List[Map[String, Any]], trainResult: Map[Int, Map[String, Map[Any, Double]]]): List[mutable.Map[String, Any]] =
+    testPassengers.map(passenger => {
+      val pc: Map[Int, Float] =
+        trainResult
+          .map(c => (c._1, c._2.flatMap(trainResAttribut => passenger.filter(tupel => tupel._1 == trainResAttribut._1))))
+          .map(c => (c._1, c._2
+            .map(att =>
+              trainResult
+                .filter(_._1 == c._1)
+                .map(tupel => (tupel._1, tupel._2
+                  .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head.toFloat)
+                ).values
+            ).foldLeft(100f)((x, y) => x * y.head))
+          )
+      //trick 17?
+      val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
+      newPassenger.update("survived", pc.maxBy(_._2)._1)
+      newPassenger
+    })
 
 
   //produces sometimes an missing argument list error - can be ignored

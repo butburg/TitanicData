@@ -4,13 +4,14 @@ import java.io.PrintWriter
 
 import scala.collection.mutable
 import scala.util.Try
+import scala.util.matching.Regex
 
 
 object Utils {
 
   // Regular Expressions for extracting the information
-  val DATA_ACCESS_PATTERN_test = """(\d+),(\d),"(.+)",(male|female),([0-9]*\.[0-9]+|[0-9]+|d*),(\d*),(\d*),(.*),([0-9]*\.[0-9]+|[0-9]+|d*),(.*),(\w*)""".r
-  val DATA_ACCESS_PATTERN_train = """(\d+),(\d),(\d),"(.+)",(male|female),([0-9]*\.[0-9]+|[0-9]+|d*),(\d*),(\d*),(.*),([0-9]*\.[0-9]+|[0-9]+|d*),(.*),(\w*)""".r
+  val DATA_ACCESS_PATTERN_test: Regex = """(\d+),(\d),"(.+)",(male|female),([0-9]*\.[0-9]+|[0-9]+|d*),(\d*),(\d*),(.*),([0-9]*\.[0-9]+|[0-9]+|d*),(.*),(\w*)""".r
+  val DATA_ACCESS_PATTERN_train: Regex = """(\d+),(\d),(\d),"(.+)",(male|female),([0-9]*\.[0-9]+|[0-9]+|d*),(\d*),(\d*),(.*),([0-9]*\.[0-9]+|[0-9]+|d*),(.*),(\w*)""".r
 
   // Reading text file
   // Stores the information in a map consisting of a property name (key) and its value
@@ -62,10 +63,8 @@ object Utils {
       case DATA_ACCESS_PATTERN_test(t1, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12) =>
         createPassengerMap(t1, "-1", t3, t4, t5, t6, t7, t8, t9, t10, t11, t12)
 
-      case DATA_ACCESS_PATTERN_train(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12) => {
+      case DATA_ACCESS_PATTERN_train(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12) =>
         createPassengerMap(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12)
-      }
-
     }
     result
   }
@@ -97,22 +96,12 @@ object Utils {
    * @param attList    A mapping from attributes to missing values count
    * @return
    * PassengerId, Survived, Pclass,  Name,                      Sex,  Age,SibSp,Parch,Ticket,   Fare,Cabin,Embarked
-   * 1,           0,        3,      "Braund,  Mr. Owen Harris", male, 22, 1,    0,    A/5 21171,7.25, ,    S
+   * 1,           0,        3,      "Braun,  Mr. Owen Harris", male, 22, 1,    0,    A/5 21171,7.25, ,    S
    */
   def countAllMissingValues(passengers: List[Map[String, Any]], attList: List[String]): Map[String, Int] =
-    passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
+    passengers.flatMap(passenger => attList.filter(attribute => !passenger.contains(attribute)))
       .groupBy(identity).mapValues(_.size)
 
-
-  //TODO here erstes
-  //
-  /*
-  * classList = survival->0, survival->1
-  * PriorProbability = 342(sur), 549(nots)
-  * attributes = l = List(pclass->(1,2,3),fareclass->(1,2,3,4),ageclass->(1,2,3,4))
-  *
-  *
-  * */
 
   val classListTitanic = Map("survival" -> 0, "survival" -> 1)
 
@@ -126,43 +115,46 @@ object Utils {
     wantedAttributes.map(attr => attr -> getClassValues(l, attr)).toMap
 
 
-  // without PriorProbability :/
+  val laplaceSmoothing: Double = 1d
+
   def naiveBayesTrain(
                        passengers: List[Map[String, Any]],
                        className: String = "survived",
                        wantedAttributes: List[String] = List("ageclass", "fare", "pclass", "sex", "embarked")
-                     ): Map[Any, Map[String, List[Float]]] = {
+                     ): Map[Any, Map[String, Map[Any, Double]]] =
     getClassValues(passengers, className)
-      .map(c => c -> getAttrsAndValues(passengers, wantedAttributes)
-        .flatMap(a => Map(a._1 -> a._2
-          .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
-        ))).toMap
-  }
+      .map(c =>
+        c -> getAttrsAndValues(passengers, wantedAttributes)
+          .flatMap(a => Map(a._1 -> a._2
+            .flatMap(value => Map(value -> (passengers.filter(map => map(className) == c).count(m => m(a._1) == value) + laplaceSmoothing) / (passengers.count(m => m(className) == c) + laplaceSmoothing * wantedAttributes.size))
+            ).toMap
+          ))
+      ).toMap
 
-  //output like:  Map(0 -> Map(pclass -> List(0.14571948, 0.17668489, 0.6775956), sex -> List(0.852459, 0.14754099)),
-  //                  1 -> Map(pclass -> List(0.39766082, 0.25438598, 0.34795323), sex -> List(0.31871346, 0.6812866)))
+  //output like:  Map(
+  //  0 -> Map("pclass" -> Map(1 -> 0.6775956, 2 -> 0.14571948, 3 -> 0.17668489),
+  //    "sex" -> Map("male" -> 0.852459, "female" -> 0.14754099)),
+  //  1 -> Map("pclass" -> Map(1 -> 0.34795323, 2 -> 00.39766082, 3 -> 0.25438598),
+  //    "sex" -> Map("male" -> 0.31871346, "female" -> 0.6812866)))
 
 
-  // passengers.flatMap(passenger => attList.filter(attribut => !passenger.contains(attribut)))
-  //    .groupBy(identity).mapValues(_.size)
-
-  def naiveBayesClassify(testPassengers: List[Map[String, Any]], trainResult: Map[Int, Map[String, Map[Any, Double]]]): List[mutable.Map[String, Any]] =
+  def naiveBayesClassify(passengers: List[Map[String, Any]], testPassengers: List[Map[String, Any]], className: String = "survived", trainResult: Map[Int, Map[String, Map[Any, Double]]]): List[mutable.Map[String, Any]] =
     testPassengers.map(passenger => {
-      val pc: Map[Int, Float] =
+      val pc: Map[Int, Double] =
         trainResult
-          .map(c => (c._1, c._2.flatMap(trainResAttribut => passenger.filter(tupel => tupel._1 == trainResAttribut._1))))
+          .map(c => (c._1, c._2.flatMap(trainResAttribute => passenger.filter(_._1 == trainResAttribute._1))))
           .map(c => (c._1, c._2
             .map(att =>
               trainResult
                 .filter(_._1 == c._1)
-                .map(tupel => (tupel._1, tupel._2
-                  .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head.toFloat)
+                .map(tuple => (tuple._1, tuple._2
+                  .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head)
                 ).values
-            ).foldLeft(100f)((x, y) => x * y.head))
+            ).foldLeft(Math.log(passengers.count(m => m(className) == c) / passengers.size))((x, y) => x + Math.log(y.head)))
           )
       //trick 17?
       val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
-      newPassenger.update("survived", pc.maxBy(_._2)._1)
+      newPassenger.update(className, pc.maxBy(_._2)._1)
       newPassenger
     })
 

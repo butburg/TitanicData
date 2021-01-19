@@ -12,14 +12,9 @@ val attList = List("passengerID", "pclass", "survived", "name", "sex", "age", "s
 
 /*
 * classList = survival->0, survival->1
-* PriorProbability = 342(sur), 549(nots)
 * attributes = l = List(pclass->(1,2,3),fareclass->(1,2,3,4),ageclass->(1,2,3,4))
-*
-*passengers: List[Map[String, Any]], classList: Map[String, Int], attributes: Map[String,Int]): Float
 * */
 
-//val attributeMap = Map("pclass" -> List(1, 2, 3), "sex" -> List("male", "female"))
-//val classList = List(0, 1)
 val wantedAttributes = List("pclass", "sex")
 val className = "survived"
 
@@ -28,15 +23,7 @@ def getClassValues(l: List[Map[String, Any]], className: String): List[Any] =
 
 def getAttrsAndValues(l: List[Map[String, Any]], wantedAttributes: List[String]): Map[String, List[Any]] =
   wantedAttributes.map(attr => attr -> getClassValues(l, attr)).toMap
-/*
-val trainingResult =
-  getClassValues(passengers, "survived")
-    .map(c => c -> getAttrsAndValues(passengers, wantedAttributes) //<- should be full list: each possible!!!
-      .flatMap(a => Map(a._1 -> a._2
-        .map(value => passengers.filter(map => map(className) == c).count(m => m(a._1) == value).toFloat / passengers.count(m => m(className) == c))
-      ))).toMap
-add val priorProb = passengers.count(m => m(className) == c).toFloat / passengers.size somewhere
-*/
+
 val trainresultManuell: Map[Int, Map[String, Map[Any, Double]]] = Map(
   0 -> Map("pclass" -> Map(1 -> 0.6775956, 2 -> 0.14571948, 3 -> 0.17668489),
     "sex" -> Map("male" -> 0.852459, "female" -> 0.14754099)),
@@ -56,7 +43,6 @@ val trainresult: Map[Any, Map[String, Map[Any, Float]]] = getClassValues(passeng
 
 
 
-
 val isSurvived =
   getClassValues(passengers, "survived")
     .map(c => c -> getAttrsAndValues(passengers, wantedAttributes) //<- should be only the one you will count on, so pclass, ageclass, fareclass, embarked
@@ -70,22 +56,20 @@ val isSurvived =
       1 -> Map( pclass -> List(0.34795323, 0.39766082, 0.25438598),
                 sex -> List(0.31871346, 0.6812866)))
  */
-
-
 val isSurvived = test
   .map(passenger => {
-    //println("AttributValues" + trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1)))))
-    val pc: Map[Any, Float] =
+    val pc: Map[Any, Double] =
       trainresult
-        .map(c => (c._1, c._2.flatMap(trainResAttribute => passenger.filter(tuple => tuple._1 == trainResAttribute._1))))
+        .map(c => (c._1, c._2.flatMap(trainResAttribut => passenger.filter(tupel => tupel._1 == trainResAttribut._1))))
         .map(c => (c._1, c._2
-          .map(att =>
+          .flatMap( att =>{
+            println(passengers.count(m => m(className) == c._1).toDouble / passengers.size)
             trainresult
               .filter(_._1 == c._1)
-              .map(c => (c._1, c._2
+              .map(tupel => (tupel._1, tupel._2
                 .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head)
               ).values
-          ).foldLeft(passengers.count(m => m(className) == c).toFloat / passengers.size)((x, y) => x * y.head))
+          }).foldLeft(passengers.count(m => m(className) == c._1).toDouble / passengers.size)((x, y) => x * y))
         )
 
     val survived = pc.maxBy(_._2)

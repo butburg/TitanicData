@@ -103,24 +103,18 @@ object Utils {
       .groupBy(identity).mapValues(_.size)
 
 
-  val classListTitanic = Map("survival" -> 0, "survival" -> 1)
-
-  val wantedAttributes = List("ageclass", "fare", "pclass", "sex", "embarked")
-
-
   def getClassValues(l: List[Map[String, Any]], className: String): List[Any] =
     l.flatMap(map => map.filter(att => att._1 == className)).distinct.map(_._2)
 
   def getAttrsAndValues(l: List[Map[String, Any]], wantedAttributes: List[String]): Map[String, List[Any]] =
     wantedAttributes.map(attr => attr -> getClassValues(l, attr)).toMap
 
-
   val laplaceSmoothing: Double = 1d
 
   def naiveBayesTrain(
                        passengers: List[Map[String, Any]],
-                       className: String = "survived",
-                       wantedAttributes: List[String] = List("ageclass", "fare", "pclass", "sex", "embarked")
+                       wantedAttributes: List[String] = List("pclass", "sex", "ageclass", "Embarked"),
+                       className: String = "survived"
                      ): Map[Any, Map[String, Map[Any, Double]]] =
     getClassValues(passengers, className)
       .map(c =>
@@ -137,20 +131,25 @@ object Utils {
   //  1 -> Map("pclass" -> Map(1 -> 0.34795323, 2 -> 00.39766082, 3 -> 0.25438598),
   //    "sex" -> Map("male" -> 0.31871346, "female" -> 0.6812866)))
 
-
-  def naiveBayesClassify(passengers: List[Map[String, Any]], testPassengers: List[Map[String, Any]], className: String = "survived", trainResult: Map[Int, Map[String, Map[Any, Double]]]): List[mutable.Map[String, Any]] =
+  def naiveBayesClassify(
+                          testPassengers: List[Map[String, Any]],
+                          passengers: List[Map[String, Any]],
+                          trainResult: Map[Any, Map[String, Map[Any, Double]]],
+                          className: String = "survived"
+                        ): List[mutable.Map[String, Any]] =
     testPassengers.map(passenger => {
-      val pc: Map[Int, Double] =
+      val pc: Map[Any, Double] =
         trainResult
           .map(c => (c._1, c._2.flatMap(trainResAttribute => passenger.filter(_._1 == trainResAttribute._1))))
           .map(c => (c._1, c._2
-            .map(att =>
+            .flatMap(att =>
               trainResult
                 .filter(_._1 == c._1)
                 .map(tuple => (tuple._1, tuple._2
                   .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head)
                 ).values
-            ).foldLeft(Math.log(passengers.count(m => m(className) == c) / passengers.size))((x, y) => x + Math.log(y.head)))
+            ).foldLeft(passengers.count(m => m(className) == c._1).toDouble / passengers.size)((x, y) => x * y))
+            //.foldLeft(Math.log(passengers.count(m => m(className) == c._1) / passengers.size))((x, y) => x + Math.log(y)))
           )
       //trick 17?
       val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)

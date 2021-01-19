@@ -60,38 +60,28 @@ val trainresult: Map[Int, Map[String, Map[Any, Double]]] = Map(
 
 val isSurvived = test
   .map(passenger => {
-    val res = mutable.Map[Any, Float](1 -> 1f)
-    println("a" + trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1)))))
-
-    trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1))))
-      .foreach(c => c._2.flatMap(att => trainresult
-        .map(tupel => (tupel._1,
-          tupel._2.map(attribute => attribute._2.filter(value => value._1 == att._2)))
+    //println("AttributValues" + trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1)))))
+    val pc: Map[Int, Float] =
+      trainresult
+        .map(c => (c._1, c._2.flatMap(trainResAttribut => passenger.filter(tupel => tupel._1 == trainResAttribut._1))))
+        .map(c => (c._1, c._2
+          .map(att =>
+                trainresult
+                  .filter(_._1 == c._1)
+                  .map(tupel => (tupel._1, tupel._2
+                    .flatMap(attribute => attribute._2.filter(value => value._1 == att._2)).values.head.toFloat)
+                  ).values
+          ).foldLeft(100f)((x, y) => x * y.head))
         )
-      )
-      )
 
-    trainresult.map(c => (c._1, c._2.flatMap(attribut => passenger.filter(tupel => tupel._1 == attribut._1))))
-      .foreach(c => println(c._2.map(att =>
-          trainresult.filter(_._1 == c._1)
-            .map(tupel => (tupel._1,
-              tupel._2.flatMap(
-                attribute => attribute._2
-                  .filter(value => value._1 == att._2)).map(_._2).head)
-            ).values
-        ).foldLeft(100d)((x, y) => x * y.head)
-      )
-      )
-
-    println(res)
-    println("survive?" + res.maxBy(_._2))
+    val survived = pc.maxBy(_._2)
+    println("survive?" + survived)
+    //trick 17
     val newPassenger: mutable.Map[String, Any] = mutable.Map(passenger.toSeq: _*)
-    newPassenger.update("survived", res.maxBy(_._2)._1)
-    println(newPassenger)
+    newPassenger.update("survived", survived._1)
     newPassenger
   })
 
-List(0.34, 0.2112, 0.3953).foldLeft(4d)((x, y) => x * y)
 
 /*
 val isSurvived = {
